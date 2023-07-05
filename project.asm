@@ -80,12 +80,17 @@ section .data
     num_of_char_message    db   "Number of characters is: ", 0
     num_of_word_message    db   "Number of words is: ", 0
     num_of_line_message    db   "Number of lines is: ", 0
+    line_message    db   " and line ", 0
+    index_message    db   "The word is appeared in index ", 0
+    total_word_message    db   "Total number of founded words is ", 0
+    enter_word_message    db   "Enter the word: ", 0
 
     FD_txt:                     dq   0               ; file description of text files         
 ;--------------------------------------------------------
 section .bss 
     file_dir   resb   1000       ; address of file
     buffer_of_text   resb    1000000   ; context of file
+    searched_word      resb    1000      ; word give to search
 
 ;---------------------------------------------------------
 section .text
@@ -458,39 +463,28 @@ f_get_file_address:
         pop rsi
         ret
 ;-------------------------------------------
-f_free_address:
+f_free:
+    enter 0, 0
+    %define address qword[rbp+16]
+    %define size    qword[rbp+24]
     push rsi
     push rcx
 
-    mov rsi, file_dir
-    mov rcx, 1000
+    mov rsi, address
+    mov rcx, size
 
     loop_free:
-        mov byte[rsi], 0        ; put 0 in all places in address buffer
+        mov byte[rsi], 0        ; put 0 in all places in pointed array
         inc rsi
         loop loop_free
     
     end_free_address:
         pop rcx
         pop rsi
-        ret
-;-------------------------------------------
-f_free_buffer:
-    push rsi
-    push rcx
-
-    mov rsi, buffer_of_text
-    mov rcx, 1000000
-
-    loop_free2:
-        mov byte[rsi], 0        ; put 0 in all places in address buffer
-        inc rsi
-        loop loop_free2
-    
-    end_free_buffer:
-        pop rcx
-        pop rsi
-        ret
+        %undef address
+        %undef  size
+        leave
+        ret 16
 ;-------------------------------------------
 check_for_old_file:
     push rdi
@@ -535,8 +529,12 @@ f_open_and_read_file:
     jmp exit_f_open_and_read_file
 
     get_new_file:
-        call f_free_address        ; free previous address
-        call f_free_buffer        ; free previous text buffer
+        push 1000
+        push file_dir
+        call f_free        ; free previous address
+        push 1000000
+        push buffer_of_text
+        call f_free        ; free previous text buffer
         call f_get_file_address    ; get new address
 
     open_file:                       ; open text file
@@ -556,6 +554,39 @@ f_open_and_read_file:
         pop rsi
         pop r8
         ret
+;-------------------------------------------
+f_find_line:
+    enter 0, 0
+    push rax
+    push rbx
+    push rcx
+    push rsi
+
+    mov rax, qword[rbp+16]        ; index of found word
+    mov rsi, buffer_of_text
+    mov rcx, 0
+    mov rdx, 0             ; number of lines seen
+    loop_find_line:
+        cmp rcx, rax
+        je  exit_f_find_line
+        mov bl, [rsi+rcx]
+        cmp bl, NL           ; count number of enters before given index
+        je  incOneLine
+        inc rcx
+        jmp loop_find_line
+
+    incOneLine:
+        inc rdx
+        inc rcx
+        jmp loop_find_line
+
+    exit_f_find_line:
+        pop rsi
+        pop rcx
+        pop rbx
+        pop rax
+        leave
+        ret 8
 ;-------------------------------------------
 show_menu:
     push rsi
@@ -726,7 +757,101 @@ f_report:
         ret
 ;-------------------------------------------
 f_search:
-    ret
+    push rax
+    push r15
+    push rsi
+    push r8
+    push rdi
+    push r10
+    push r9
+    push rcx
+    push rdx
+
+    call f_open_and_read_file   ; check for old open files and open and read the file
+    cmp rax, -1
+    je exit_f_search
+    mov r15, 0                   ; total number of founded words
+
+    get_searched_word:                    ; get word   
+        mov rsi, enter_word_message
+        call printString
+        mov rsi, searched_word
+        loop_get_searched_word:               
+            mov  rax, 0
+            call getc                     ; get one char
+            cmp  al, NL                   ; check if enter entered and string is finished
+            je   search                   ; go to search word
+            mov  [rsi], al                ; else: put input char in word
+            inc  rsi                      ; point to next free place
+            jmp  loop_get_searched_word   ; get next char
+    
+
+    search:          ; search word in context
+        call OneLine
+        mov rsi, buffer_of_text
+        mov r8, rsi
+        mov rdi, rsi
+        call GetStrlen      ; len of text
+        add rdi, rdx
+        mov r10, rdi        ; r11 = end of file
+        mov r9, searched_word
+        mov rax, 0
+
+        again:
+            mov rdi, searched_word
+            call GetStrlen
+            mov rcx, rdx
+            mov rsi, r8
+            mov rdi, r9
+            repe cmpsb
+            je foundOne    ; one occurrence found
+            inc r8         ; check for others
+            cmp r8, r10
+            jne again
+            jmp exit_f_search
+
+        foundOne:
+            inc r15
+            mov rax, r8
+            sub rax, buffer_of_text       ; find the index of appearance
+            mov rsi, index_message
+            call printString
+            call writeNum
+            push rax
+            call f_find_line              ; return the line that this words appears in rdx
+            mov rax, rdx
+            inc rax
+            mov rsi, line_message
+            call printString
+            call writeNum
+            call newLine
+            mov rdi, searched_word
+            call GetStrlen                  ; go search for next index after current word
+            add r8, rdx
+            cmp r8, r10
+            jnge again
+
+    exit_f_search:
+        mov rax, r15
+        mov rsi, total_word_message   ; print number of total founded words
+        call printString
+        call writeNum
+        call newLine
+        call OneLine
+        call newLine
+        push 1000
+        push searched_word
+        call f_free           ; free the word
+        pop rdx
+        pop rcx
+        pop r9
+        pop r10
+        pop rdi
+        pop r8
+        pop rsi
+        pop r15
+        pop rax
+        ret
 ;-------------------------------------------
 f_replace:
     ret
