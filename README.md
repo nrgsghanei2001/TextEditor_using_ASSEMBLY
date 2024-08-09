@@ -1,9 +1,35 @@
-**Text Editor**
+# Assembly Text Editor
 
-The Text Editor project emulates a sophisticated text editing environment, leveraging the capabilities of assembly language. Through meticulously crafted subroutines, it offers a comprehensive array of functionalities essential for text manipulation and management.
+## Overview
 
-This robust system allows users to perform various operations seamlessly, including reading, writing, saving, deleting, editing, appending, searching, and generating reports for files. Each of these tasks is encapsulated within dedicated subroutines, ensuring modularity and ease of maintenance.
+The **Assembly Text Editor** project is a low-level text editing application implemented in Assembly language. It provides essential text manipulation features with a focus on understanding system-level programming and hardware interaction. This is my final project of assembly course.
 
-Utilizing assembly language's low-level control and efficient memory management, this project provides a performant and reliable platform for text editing tasks. Its modular design fosters extensibility, enabling the incorporation of additional features and enhancements with relative ease.
+## Features
 
-By simulating a text editor environment, this project not only showcases the power and versatility of assembly language but also provides valuable insights into the intricacies of text manipulation and file management at the low-level system level.
+- **File Operations:**
+  - **Open/Close Files:** Open existing files and close them after editing.
+  - **Save as/save:** Save the current file with a new name or change itself.
+
+- **Text Manipulation:**
+  - **Search and Replace:** Find and replace text within the file using regular expressions.
+  - **Append:** Add new text to the end of the file.
+  - **Insert and Delete:** Insert text at specific positions and delete existing text.
+  - **Cursor Management:** Move the cursor and handle text insertion and deletion based on cursor position.
+
+- **Regular Expressions:**
+  - Support for basic regular expressions for searching and replacing text.
+
+- **Mode Management:**
+  - **Cooked Mode:** Normal text mode with standard input processing.
+  - **Raw Mode:** Direct input mode without standard processing.
+
+
+## Development Notes
+
+- **System Requirements:**
+  - Assembly language compiler (NASM)
+  - Linux Operating System
+
+- **Important Files:**
+  - `Makefile`: Build instructions for compiling and linking the application.
+
